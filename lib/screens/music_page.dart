@@ -34,7 +34,7 @@ class _MusicPageState extends State<MusicPage> {
             ),
             const SizedBox(height: 20),
             Text(
-              isPlaying ? "กำลังเล่นเพลง..." : "หยุดเพลงแล้ว",
+              isPlaying ? "กำลังเล่นเพลง..." : "หยุดเพลงแล้วe",
               style: const TextStyle(fontSize: 20),
             ),
             const SizedBox(height: 20),
