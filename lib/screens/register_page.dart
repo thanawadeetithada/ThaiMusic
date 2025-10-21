@@ -8,8 +8,8 @@ class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
   @override
-    State<RegisterPage> createState() => _RegisterPageState();
-  }
+  State<RegisterPage> createState() => _RegisterPageState();
+}
 
 class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController fname = TextEditingController();
@@ -20,21 +20,21 @@ class _RegisterPageState extends State<RegisterPage> {
 
   File? _selectedImage;
 
-   bool isValidEmail(String email) {
+  bool isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email);
   }
 
   Future<void> _pickImage() async {
-  final picker = ImagePicker();
-  final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-  if (pickedFile != null) {
-    setState(() {
-      _selectedImage = File(pickedFile.path);
-    });
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
   }
-}
 
   Future<void> registerUser() async {
     if (password.text != confirmPassword.text) {
@@ -43,10 +43,10 @@ class _RegisterPageState extends State<RegisterPage> {
       );
       return;
     }
-    
+
     final trimmedEmail = email.text.trim();
-      if (!isValidEmail(trimmedEmail)) {
-        ScaffoldMessenger.of(context).showSnackBar(
+    if (!isValidEmail(trimmedEmail)) {
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('รูปแบบอีเมลไม่ถูกต้อง')),
       );
       return;
@@ -67,39 +67,40 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     try {
-    final response = await request.send();
-    final respStr = await response.stream.bytesToString();
+      final response = await request.send();
+      final respStr = await response.stream.bytesToString();
 
-    if (response.statusCode == 200) {
-      if (respStr.contains('success')) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('สมัครสมาชิกสำเร็จ!')),
-        );
-        Navigator.pop(context);
-      } else if (respStr.contains('อีเมลนี้มีผู้ใช้แล้ว')) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('อีเมลนี้มีผู้ใช้แล้ว')),
-        );
+      if (response.statusCode == 200) {
+        if (respStr.contains('success')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('สมัครสมาชิกสำเร็จ!')),
+          );
+          Navigator.pop(context);
+        } else if (respStr.contains('อีเมลนี้มีผู้ใช้แล้ว')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('อีเมลนี้มีผู้ใช้แล้ว')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('ผิดพลาด: $respStr')),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ผิดพลาด: $respStr')),
+          SnackBar(
+            content:
+                Text('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (${response.statusCode})'),
+          ),
         );
       }
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (${response.statusCode})'),
-        ),
+        SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
       );
     }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
-    );
   }
-}
 
-   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
@@ -128,8 +129,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: CircleAvatar(
                         radius: 60,
                         backgroundColor: Colors.grey[200],
-                        backgroundImage:
-                            _selectedImage != null ? FileImage(_selectedImage!) : null,
+                        backgroundImage: _selectedImage != null
+                            ? FileImage(_selectedImage!)
+                            : null,
                         child: _selectedImage == null
                             ? const Icon(Icons.add_a_photo,
                                 size: 40, color: Colors.grey)
@@ -142,7 +144,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       style: TextStyle(fontSize: 18, color: Colors.black54),
                     ),
                     const SizedBox(height: 20),
-
                     _buildTextField('ชื่อ', controller: fname),
                     const SizedBox(height: 15),
                     _buildTextField('นามสกุล', controller: lname),
@@ -156,7 +157,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     _buildTextField('ยืนยันรหัสผ่าน',
                         controller: confirmPassword, obscure: true),
                     const SizedBox(height: 25),
-
                     SizedBox(
                       width: 150,
                       height: 40,
@@ -170,11 +170,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
                         child: const Text('สมัครสมาชิก',
-                            style: TextStyle(color: Colors.white, fontSize: 18)),
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 18)),
                       ),
                     ),
                     const SizedBox(height: 15),
-
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
@@ -194,17 +194,25 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
   Widget _buildTextField(String hint,
       {bool obscure = false,
       String? hintExample,
       TextEditingController? controller}) {
+    final isPasswordField = hint == 'รหัสผ่าน';
+    final isConfirmPasswordField = hint == 'ยืนยันรหัสผ่าน';
+
     return Material(
       elevation: 3,
       shadowColor: Colors.black54,
       borderRadius: BorderRadius.circular(25),
       child: TextField(
         controller: controller,
-        obscureText: obscure,
+        obscureText: obscure
+            ? (isPasswordField ? _obscurePassword : _obscureConfirmPassword)
+            : false,
         decoration: InputDecoration(
           hintText: hintExample ?? hint,
           filled: true,
@@ -215,6 +223,31 @@ class _RegisterPageState extends State<RegisterPage> {
             borderRadius: BorderRadius.circular(25),
             borderSide: BorderSide.none,
           ),
+          suffixIcon: obscure
+              ? Padding(
+                  padding:
+                      const EdgeInsets.only(right: 8),
+                  child: IconButton(
+                    icon: Icon(
+                      (isPasswordField && _obscurePassword) ||
+                              (isConfirmPasswordField &&
+                                  _obscureConfirmPassword)
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        if (isPasswordField) {
+                          _obscurePassword = !_obscurePassword;
+                        } else if (isConfirmPasswordField) {
+                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                        }
+                      });
+                    },
+                  ),
+                )
+              : null,
         ),
       ),
     );
