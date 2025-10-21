@@ -1,9 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
+import 'music_page.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController email = TextEditingController();
+  final TextEditingController password = TextEditingController();
+
+  Future<void> loginUser() async {
+    final url = Uri.parse('http://localhost/phpAPI/login.php');
+    final response = await http.post(
+      url,
+      body: {
+        'email': email.text.trim(),
+        'password': password.text.trim(),
+      },
+    );
+
+    if (response.statusCode == 200) {
+      var data = json.decode(response.body);
+
+      if (data['status'] == 'success') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('เข้าสู่ระบบสำเร็จ!')),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MusicPage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? 'เข้าสู่ระบบไม่สำเร็จ')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (${response.statusCode})')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +85,10 @@ class LoginPage extends StatelessWidget {
                             fontSize: 22, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 30),
-                      _buildTextField('ชื่อผู้ใช้'),
+                      _buildTextField('อีเมล', controller: email),
                       const SizedBox(height: 20),
-                      _buildTextField('รหัสผ่าน', obscure: true),
+                      _buildTextField('รหัสผ่าน',
+                          controller: password, obscure: true),
                       const SizedBox(height: 10),
                       Align(
                         alignment: Alignment.centerRight,
@@ -58,12 +104,12 @@ class LoginPage extends StatelessWidget {
                               style: TextStyle(color: Colors.black54)),
                         ),
                       ),
-                      const SizedBox(height: 15, width: 15),
+                      const SizedBox(height: 15),
                       SizedBox(
                         width: 150,
                         height: 40,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: loginUser,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blueAccent,
                             elevation: 3,
@@ -77,7 +123,7 @@ class LoginPage extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 15, width: 15),
+                      const SizedBox(height: 15),
                       TextButton(
                         onPressed: () {
                           Navigator.push(
@@ -102,12 +148,14 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField(String hint, {bool obscure = false}) {
+  Widget _buildTextField(String hint,
+      {bool obscure = false, TextEditingController? controller}) {
     return Material(
       elevation: 3,
       shadowColor: Colors.black54,
       borderRadius: BorderRadius.circular(25),
       child: TextField(
+        controller: controller,
         obscureText: obscure,
         decoration: InputDecoration(
           hintText: hint,
