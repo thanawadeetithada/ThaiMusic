@@ -1,7 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'reset_password_page.dart';
 
-class ForgotPasswordPage extends StatelessWidget {
+class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
+
+  @override
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+}
+
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  final TextEditingController emailController = TextEditingController();
+  bool isLoading = false;
+
+  Future<void> sendResetRequest() async {
+    final email = emailController.text.trim();
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณากรอกอีเมล')),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      String getServerUrl() {
+        if (Theme.of(context).platform == TargetPlatform.android) {
+          return 'https://bermine-thailand.com/process_forgot_password.php';
+        } else {
+          return 'https://bermine-thailand.com/process_forgot_password.php';
+        }
+      }
+
+      final url = Uri.parse(getServerUrl());
+      final response = await http.post(url, body: {'email': email});
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+
+        if (data['status'] == 'success') {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('ส่งสำเร็จ'),
+                content: const Text(
+                    'ลิงก์สำหรับรีเซ็ตรหัสผ่านถูกส่งไปที่อีเมลของคุณแล้ว'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        "/login",
+                        (route) => false,
+                      );
+                    },
+                    child: const Text('ตกลง'),
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data['message'] ?? 'เกิดข้อผิดพลาด')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('เกิดข้อผิดพลาด (${response.statusCode})')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: $e')),
+      );
+    }
+
+    setState(() => isLoading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +121,7 @@ class ForgotPasswordPage extends StatelessWidget {
                       shadowColor: Colors.black54,
                       borderRadius: BorderRadius.circular(25),
                       child: TextField(
+                        controller: emailController,
                         decoration: InputDecoration(
                           hintText: 'อีเมล',
                           filled: true,
@@ -67,12 +148,11 @@ class ForgotPasswordPage extends StatelessWidget {
                             fixedSize: const Size(120, 40),
                             elevation: 3,
                           ),
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/reset');
-                          },
-                          child: const Text(
-                            'ตกลง',
-                            style: TextStyle(fontSize: 18, color: Colors.white),
+                          onPressed: isLoading ? null : sendResetRequest,
+                          child: Text(
+                            isLoading ? 'ตกลง' : 'ตกลง',
+                            style: const TextStyle(
+                                fontSize: 18, color: Colors.white),
                           ),
                         ),
                         const SizedBox(width: 15),

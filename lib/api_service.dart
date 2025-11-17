@@ -2,7 +2,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class ApiService {
-  static const String baseUrl = "http://localhost/phpAPI";
+  static const String baseUrl = "https://bermine-thailand.com/";
 
   static Future<void> insertUser({
     required String fname,

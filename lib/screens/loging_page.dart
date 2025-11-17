@@ -17,7 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController password = TextEditingController();
 
   Future<void> loginUser() async {
-    final url = Uri.parse('http://localhost/phpAPI/login.php');
+    final url = Uri.parse('https://bermine-thailand.com/login.php');
     final response = await http.post(
       url,
       body: {
@@ -45,7 +45,9 @@ class _LoginPageState extends State<LoginPage> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (${response.statusCode})')),
+        SnackBar(
+            content:
+                Text('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (${response.statusCode})')),
       );
     }
   }
@@ -148,6 +150,8 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  bool _obscurePassword = true;
+
   Widget _buildTextField(String hint,
       {bool obscure = false, TextEditingController? controller}) {
     return Material(
@@ -156,7 +160,7 @@ class _LoginPageState extends State<LoginPage> {
       borderRadius: BorderRadius.circular(25),
       child: TextField(
         controller: controller,
-        obscureText: obscure,
+        obscureText: obscure ? _obscurePassword : false,
         decoration: InputDecoration(
           hintText: hint,
           filled: true,
@@ -167,6 +171,24 @@ class _LoginPageState extends State<LoginPage> {
             borderRadius: BorderRadius.circular(25),
             borderSide: BorderSide.none,
           ),
+          suffixIcon: obscure
+              ? Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                )
+              : null,
         ),
       ),
     );
