@@ -17,7 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController password = TextEditingController();
 
   Future<void> loginUser() async {
-    final url = Uri.parse('http://localhost/phpAPI/login.php');
+    final url = Uri.parse('https://bermine-thailand.com/login.php');
     final response = await http.post(
       url,
       body: {

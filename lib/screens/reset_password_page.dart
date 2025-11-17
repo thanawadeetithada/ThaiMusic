@@ -1,7 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-class ResetPasswordPage extends StatelessWidget {
-  const ResetPasswordPage({super.key});
+class ResetPasswordPage extends StatefulWidget {
+  final String email;
+  const ResetPasswordPage({super.key, required this.email});
+
+  @override
+  State<ResetPasswordPage> createState() => _ResetPasswordPageState();
+}
+
+class _ResetPasswordPageState extends State<ResetPasswordPage> {
+  final TextEditingController newPassword = TextEditingController();
+  final TextEditingController confirmPassword = TextEditingController();
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
+
+  Future<void> resetPassword() async {
+    if (newPassword.text != confirmPassword.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('รหัสผ่านไม่ตรงกัน')),
+      );
+      return;
+    }
+
+    final url = Uri.parse('https://lumaairfresh.com/reset_password.php');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'email': widget.email,
+        'new_password': newPassword.text.trim(),
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      var data = json.decode(response.body);
+      if (data['status'] == 'success') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('เปลี่ยนรหัสผ่านสำเร็จ!')),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? 'เกิดข้อผิดพลาด')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (${response.statusCode})')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,9 +91,23 @@ class ResetPasswordPage extends StatelessWidget {
                       shadowColor: Colors.black54,
                       borderRadius: BorderRadius.circular(25),
                       child: TextField(
-                        obscureText: true,
+                        controller: newPassword,
+                        obscureText: _obscureNew,
                         decoration: InputDecoration(
                           hintText: 'รหัสผ่านใหม่',
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureNew
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.black54,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureNew = !_obscureNew;
+                              });
+                            },
+                          ),
                           filled: true,
                           fillColor: Colors.white,
                           contentPadding: const EdgeInsets.symmetric(
@@ -61,9 +125,23 @@ class ResetPasswordPage extends StatelessWidget {
                       shadowColor: Colors.black54,
                       borderRadius: BorderRadius.circular(25),
                       child: TextField(
-                        obscureText: true,
+                        controller: confirmPassword,
+                        obscureText: _obscureConfirm,
                         decoration: InputDecoration(
                           hintText: 'ยืนยันรหัสผ่านใหม่',
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirm
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.black54,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirm = !_obscureConfirm;
+                              });
+                            },
+                          ),
                           filled: true,
                           fillColor: Colors.white,
                           contentPadding: const EdgeInsets.symmetric(
@@ -88,12 +166,7 @@ class ResetPasswordPage extends StatelessWidget {
                             fixedSize: const Size(120, 40),
                             elevation: 3,
                           ),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('เปลี่ยนรหัสผ่านสำเร็จ')),
-                            );
-                          },
+                          onPressed: resetPassword,
                           child: const Text(
                             'ตกลง',
                             style: TextStyle(fontSize: 18, color: Colors.white),
@@ -110,9 +183,7 @@ class ResetPasswordPage extends StatelessWidget {
                             fixedSize: const Size(120, 40),
                             elevation: 3,
                           ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
+                          onPressed: () => Navigator.pop(context),
                           child: const Text('ยกเลิก'),
                         ),
                       ],

@@ -3,6 +3,9 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
+import 'package:http/io_client.dart';
+import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -36,7 +39,28 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
+  http.Client createInsecureHttpClient() {
+    if (kDebugMode && Platform.isAndroid) {
+      final httpClient = HttpClient()
+        ..badCertificateCallback =
+            (X509Certificate cert, String host, int port) => true;
+      return IOClient(httpClient);
+    }
+    return http.Client();
+  }
+
   Future<void> registerUser() async {
+    if (fname.text.trim().isEmpty ||
+        lname.text.trim().isEmpty ||
+        email.text.trim().isEmpty ||
+        password.text.trim().isEmpty ||
+        confirmPassword.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณากรอกข้อมูลให้ครบถ้วน')),
+      );
+      return;
+    }
+
     if (password.text != confirmPassword.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('รหัสผ่านไม่ตรงกัน')),
@@ -52,7 +76,10 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    final url = Uri.parse('http://localhost/phpAPI/register.php');
+    final client = createInsecureHttpClient();
+    const String apiUrl = 'https://bermine-thailand.com/register.php';
+    final url = Uri.parse(apiUrl);
+
     var request = http.MultipartRequest('POST', url);
 
     request.fields['fname'] = fname.text.trim();
@@ -61,48 +88,75 @@ class _RegisterPageState extends State<RegisterPage> {
     request.fields['password'] = password.text.trim();
 
     if (_selectedImage != null) {
-      request.files.add(
-        await http.MultipartFile.fromPath('img', _selectedImage!.path),
-      );
+      try {
+        request.files.add(
+          await http.MultipartFile.fromPath('img', _selectedImage!.path),
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('ไม่สามารถเพิ่มไฟล์รูปภาพ: $e')),
+          );
+        }
+        client.close();
+        return;
+      }
     }
 
     try {
-      final response = await request.send();
+      final response = await client.send(request);
       final respStr = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
         if (respStr.contains('success')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('สมัครสมาชิกสำเร็จ!')),
-          );
-          Navigator.pop(context);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('สมัครสมาชิกสำเร็จ!')),
+            );
+            Navigator.pop(context);
+          }
         } else if (respStr.contains('อีเมลนี้มีผู้ใช้แล้ว')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('อีเมลนี้มีผู้ใช้แล้ว')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('อีเมลนี้มีผู้ใช้แล้ว')),
+            );
+          }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('ผิดพลาด: $respStr')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('ผิดพลาด: $respStr')),
+            );
+          }
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (${response.statusCode})'),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content:
+                  Text('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (${response.statusCode})'),
+            ),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
+        );
+      }
+    } finally {
+      client.close();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('สมัครสมาชิก'),
+        backgroundColor: const Color.fromARGB(255, 171, 212, 241),
+        elevation: 0,
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -121,8 +175,10 @@ class _RegisterPageState extends State<RegisterPage> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     GestureDetector(
                       onTap: _pickImage,
@@ -149,22 +205,31 @@ class _RegisterPageState extends State<RegisterPage> {
                     _buildTextField('นามสกุล', controller: lname),
                     const SizedBox(height: 15),
                     _buildTextField('อีเมล',
-                        controller: email, hintExample: 'example@gmail.com'),
+                        controller: email,
+                        hintExample: 'example@gmail.com',
+                        keyboardType: TextInputType.emailAddress),
                     const SizedBox(height: 15),
                     _buildTextField('รหัสผ่าน',
-                        controller: password, obscure: true),
+                        controller: password,
+                        obscure: true,
+                        keyboardType: TextInputType.visiblePassword),
                     const SizedBox(height: 15),
                     _buildTextField('ยืนยันรหัสผ่าน',
-                        controller: confirmPassword, obscure: true),
+                        controller: confirmPassword,
+                        obscure: true,
+                        keyboardType: TextInputType.visiblePassword),
+
                     const SizedBox(height: 25),
+
+                    // ปุ่มสมัครสมาชิก
                     SizedBox(
                       width: 150,
-                      height: 40,
+                      height: 45,
                       child: ElevatedButton(
                         onPressed: registerUser,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueAccent,
-                          elevation: 3,
+                          elevation: 5,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(25),
                           ),
@@ -200,7 +265,8 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildTextField(String hint,
       {bool obscure = false,
       String? hintExample,
-      TextEditingController? controller}) {
+      TextEditingController? controller,
+      TextInputType keyboardType = TextInputType.text}) {
     final isPasswordField = hint == 'รหัสผ่าน';
     final isConfirmPasswordField = hint == 'ยืนยันรหัสผ่าน';
 
@@ -210,6 +276,7 @@ class _RegisterPageState extends State<RegisterPage> {
       borderRadius: BorderRadius.circular(25),
       child: TextField(
         controller: controller,
+        keyboardType: keyboardType,
         obscureText: obscure
             ? (isPasswordField ? _obscurePassword : _obscureConfirmPassword)
             : false,
@@ -225,8 +292,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           suffixIcon: obscure
               ? Padding(
-                  padding:
-                      const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.only(right: 8),
                   child: IconButton(
                     icon: Icon(
                       (isPasswordField && _obscurePassword) ||
