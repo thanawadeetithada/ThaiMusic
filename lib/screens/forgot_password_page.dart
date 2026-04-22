@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'reset_password_page.dart';
+import '../widgets/custom_layout.dart'; 
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -29,9 +29,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     try {
       String getServerUrl() {
         if (Theme.of(context).platform == TargetPlatform.android) {
-          return 'https://bermine-thailand.com/process_forgot_password.php';
+          return 'https://127.0.0.1/app_process_forgot_password.php';
         } else {
-          return 'https://bermine-thailand.com/process_forgot_password.php';
+          return 'https://127.0.0.1/app_process_forgot_password.php';
         }
       }
 
@@ -85,99 +85,87 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color.fromARGB(255, 171, 212, 241),
-              Color.fromARGB(255, 253, 253, 253)
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'ลืมรหัสผ่าน',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+    return CustomScaffold(
+      title: "ลืมรหัสผ่าน",
+      body: Center(
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 30),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'ลืมรหัสผ่าน',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 25),
-                    Material(
-                      elevation: 3,
-                      shadowColor: Colors.black54,
-                      borderRadius: BorderRadius.circular(25),
-                      child: TextField(
-                        controller: emailController,
-                        decoration: InputDecoration(
-                          hintText: 'อีเมล',
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(25),
-                            borderSide: BorderSide.none,
-                          ),
+                  ),
+                  const SizedBox(height: 25),
+                  Material(
+                    elevation: 3,
+                    shadowColor: Colors.black54,
+                    borderRadius: BorderRadius.circular(25),
+                    child: TextField(
+                      controller: emailController,
+                      decoration: InputDecoration(
+                        hintText: 'อีเมล',
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(25),
+                          borderSide: BorderSide.none,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 30),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blueAccent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            fixedSize: const Size(120, 40),
-                            elevation: 3,
+                  ),
+                  const SizedBox(height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
                           ),
-                          onPressed: isLoading ? null : sendResetRequest,
-                          child: Text(
-                            isLoading ? 'ตกลง' : 'ตกลง',
-                            style: const TextStyle(
-                                fontSize: 18, color: Colors.white),
-                          ),
+                          fixedSize: const Size(120, 40),
+                          elevation: 3,
                         ),
-                        const SizedBox(width: 15),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black87,
-                            fixedSize: const Size(120, 40),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            elevation: 3,
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          child: const Text(
-                            'ยกเลิก',
-                            style: TextStyle(fontSize: 18),
-                          ),
+                        onPressed: isLoading ? null : sendResetRequest,
+                        child: Text(
+                          isLoading ? 'ตกลง' : 'ตกลง',
+                          style: const TextStyle(
+                              fontSize: 18, color: Colors.white),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                      const SizedBox(width: 15),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black87,
+                          fixedSize: const Size(120, 40),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 3,
+                        ),
+                        onPressed: () {
+                          // 📌 บังคับเปลี่ยน URL กลับไปหน้า Login เมื่อกดยกเลิก
+                          Navigator.pushReplacementNamed(context, '/login');
+                        },
+                        child: const Text(
+                          'ยกเลิก',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),

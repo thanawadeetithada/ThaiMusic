@@ -24,7 +24,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       return;
     }
 
-    final url = Uri.parse('https://lumaairfresh.com/reset_password.php');
+    final url = Uri.parse('https://127.0.0.1/ThaiMusic_Admin/app_reset_password.php');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},

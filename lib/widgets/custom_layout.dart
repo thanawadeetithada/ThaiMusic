@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../main.dart'; // ตรวจสอบให้แน่ใจว่า import ไฟล์ main.dart เพื่อดึงตัวแปร isUserLoggedIn มาใช้
+import 'package:shared_preferences/shared_preferences.dart';
+import '../api_service.dart';
 
 class CustomScaffold extends StatelessWidget {
   final String title;
@@ -62,8 +63,66 @@ class CustomScaffold extends StatelessWidget {
 }
 
 // --------- เมนูแบบเต็มหน้าจอ (Full Screen Menu) ---------
-class FullScreenMenu extends StatelessWidget {
+class FullScreenMenu extends StatefulWidget {
   const FullScreenMenu({super.key});
+
+  @override
+  State<FullScreenMenu> createState() => _FullScreenMenuState();
+}
+
+class _FullScreenMenuState extends State<FullScreenMenu> {
+  bool _isLoggedIn = false;
+  String _firstName = "กำลังโหลด...";
+  String? _profileImageUrl; // 📌 ตัวแปรเก็บ URL รูปภาพ
+  bool _isLoading = true;
+
+  final String baseUrl = "http://127.0.0.1/ThaiMusic_Admin/";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  // 📌 ฟังก์ชันตรวจสอบ Session และดึงข้อมูลจาก Database
+  Future<void> _loadUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool loggedIn = prefs.getBool('isLoggedIn') ?? false;
+    String? userId = prefs.getString('user_id');
+
+    if (loggedIn && userId != null) {
+      // ดึงข้อมูลโปรไฟล์จากฐานข้อมูล
+      var result = await ApiService.getProfile(userId);
+      if (result['status'] == 'success') {
+        setState(() {
+          _isLoggedIn = true;
+          _firstName = result['data']['first_name'] ?? "ผู้ใช้งาน";
+          _profileImageUrl = result['data']['profile_image']; // 📌 เก็บ URL รูป
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoggedIn = true;
+          _firstName = "ผู้ใช้งาน";
+          _isLoading = false;
+        });
+      }
+    } else {
+      setState(() {
+        _isLoggedIn = false;
+        _isLoading = false;
+      });
+    }
+  }
+
+  // 📌 ฟังก์ชันออกจากระบบ
+  Future<void> _logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,26 +140,44 @@ class FullScreenMenu extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             
-            // ส่วนแสดงโปรไฟล์ หรือ ปุ่มเข้าสู่ระบบ
-            if (isUserLoggedIn)
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+            if (_isLoading)
+              const CircularProgressIndicator(color: Colors.white)
+            else if (_isLoggedIn)
+              Column(
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, color: Colors.black, size: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // 📌 เช็คการแสดงรูปโปรไฟล์
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Colors.white,
+                        backgroundImage: (_profileImageUrl != null && _profileImageUrl!.isNotEmpty && _profileImageUrl != "default.png")
+                            ? NetworkImage(baseUrl + _profileImageUrl!)
+                            : null,
+                        child: (_profileImageUrl == null || _profileImageUrl!.isEmpty || _profileImageUrl == "default.png")
+                            ? const Icon(Icons.person, color: Colors.black, size: 30) // แสดง Icon ถ้าไม่มีรูป
+                            : null,
+                      ),
+                      const SizedBox(width: 15),
+                      Text(
+                        _firstName,
+                        style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 15),
-                  Text("Thanawadee", 
-                      style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  // ปุ่มออกจากระบบ
+                  TextButton(
+                    onPressed: _logout,
+                    child: const Text("ออกจากระบบ", style: TextStyle(color: Colors.redAccent, fontSize: 16)),
+                  )
                 ],
               )
             else
               GestureDetector(
                 onTap: () {
-                  Navigator.pop(context); // ปิดเมนูก่อน
-                  Navigator.pushNamed(context, '/login'); // เปิดหน้า Login
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/login');
                 },
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -111,32 +188,31 @@ class FullScreenMenu extends StatelessWidget {
                       child: Icon(Icons.person, color: Colors.black, size: 30),
                     ),
                     SizedBox(width: 15),
-                    Text("เข้าสู่ระบบ", 
-                        style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(
+                      "เข้าสู่ระบบ", 
+                      style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)
+                    ),
                   ],
                 ),
               ),
             
-            const SizedBox(height: 50),
+            const SizedBox(height: 30),
             
             // รายการเมนู
             _buildMenuItem("หน้าหลัก", () {
-              Navigator.pop(context); // ปิดเมนู
-              Navigator.pushReplacementNamed(context, '/main'); // สลับไปหน้าหลัก
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(context, '/main');
             }),
             _buildMenuItem("ข้อมูลส่วนตัว", () {
               Navigator.pop(context);
-              // เปลี่ยนจาก pushNamed เป็น pushReplacementNamed
               Navigator.pushReplacementNamed(context, '/profile'); 
             }),
             _buildMenuItem("เกี่ยวกับ", () {
               Navigator.pop(context);
-              // เปลี่ยนจาก pushNamed เป็น pushReplacementNamed
               Navigator.pushReplacementNamed(context, '/about'); 
             }),
             _buildMenuItem("ติดต่อเรา", () {
               Navigator.pop(context);
-              // เปลี่ยนจาก pushNamed เป็น pushReplacementNamed
               Navigator.pushReplacementNamed(context, '/contact'); 
             }),
           ],

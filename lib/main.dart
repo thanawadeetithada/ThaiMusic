@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:app_links/app_links.dart';
 
 // Import หน้าเก่าของคุณ
-import 'screens/loging_page.dart';
+import 'screens/login_page.dart';
 import 'screens/register_page.dart';
 import 'screens/forgot_password_page.dart';
 import 'screens/reset_password_page.dart';

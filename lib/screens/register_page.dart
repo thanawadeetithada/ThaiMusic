@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
-import 'package:http/io_client.dart';
-import 'package:flutter/foundation.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'dart:typed_data'; 
+import '../widgets/custom_layout.dart'; 
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -21,7 +19,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController password = TextEditingController();
   final TextEditingController confirmPassword = TextEditingController();
 
-  File? _selectedImage;
+  Uint8List? _imageBytes;
+  String? _imageName;
 
   bool isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
@@ -33,20 +32,12 @@ class _RegisterPageState extends State<RegisterPage> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
       setState(() {
-        _selectedImage = File(pickedFile.path);
+        _imageBytes = bytes;
+        _imageName = pickedFile.name;
       });
     }
-  }
-
-  http.Client createInsecureHttpClient() {
-    if (kDebugMode && Platform.isAndroid) {
-      final httpClient = HttpClient()
-        ..badCertificateCallback =
-            (X509Certificate cert, String host, int port) => true;
-      return IOClient(httpClient);
-    }
-    return http.Client();
   }
 
   Future<void> registerUser() async {
@@ -68,18 +59,14 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    final trimmedEmail = email.text.trim();
-    if (!isValidEmail(trimmedEmail)) {
+    if (!isValidEmail(email.text.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('รูปแบบอีเมลไม่ถูกต้อง')),
       );
       return;
     }
 
-    final client = createInsecureHttpClient();
-    const String apiUrl = 'https://bermine-thailand.com/register.php';
-    final url = Uri.parse(apiUrl);
-
+    final url = Uri.parse('http://127.0.0.1/ThaiMusic_Admin/app_register.php');
     var request = http.MultipartRequest('POST', url);
 
     request.fields['fname'] = fname.text.trim();
@@ -87,170 +74,135 @@ class _RegisterPageState extends State<RegisterPage> {
     request.fields['email'] = email.text.trim();
     request.fields['password'] = password.text.trim();
 
-    if (_selectedImage != null) {
-      try {
-        request.files.add(
-          await http.MultipartFile.fromPath('img', _selectedImage!.path),
-        );
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('ไม่สามารถเพิ่มไฟล์รูปภาพ: $e')),
-          );
-        }
-        client.close();
-        return;
-      }
+    if (_imageBytes != null) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'img', 
+          _imageBytes!,
+          filename: _imageName ?? 'profile_pic.jpg',
+        ),
+      );
     }
 
     try {
-      final response = await client.send(request);
+      final response = await request.send();
       final respStr = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
-        if (respStr.contains('success')) {
+        var data = json.decode(respStr);
+        if (data['status'] == 'success') {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('สมัครสมาชิกสำเร็จ!')),
+              const SnackBar(
+                content: Text('สมัครสมาชิกสำเร็จ!'), 
+                backgroundColor: Colors.green,
+              ),
             );
-            Navigator.pop(context);
-          }
-        } else if (respStr.contains('อีเมลนี้มีผู้ใช้แล้ว')) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('อีเมลนี้มีผู้ใช้แล้ว')),
-            );
+            // 📌 บังคับเปลี่ยน URL กลับไปหน้า Login
+            Navigator.pushReplacementNamed(context, '/login'); 
           }
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('ผิดพลาด: $respStr')),
+              SnackBar(content: Text(data['message'] ?? 'เกิดข้อผิดพลาด')),
             );
           }
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content:
-                  Text('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (${response.statusCode})'),
-            ),
+            SnackBar(content: Text('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (${response.statusCode})')),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
+          SnackBar(content: Text('เกิดข้อผิดพลาดในการส่งข้อมูล: $e')),
         );
       }
-    } finally {
-      client.close();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('สมัครสมาชิก'),
-        backgroundColor: const Color.fromARGB(255, 171, 212, 241),
-        elevation: 0,
-      ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color.fromARGB(255, 171, 212, 241),
-              Color.fromARGB(255, 253, 253, 253)
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.grey[200],
-                        backgroundImage: _selectedImage != null
-                            ? FileImage(_selectedImage!)
-                            : null,
-                        child: _selectedImage == null
-                            ? const Icon(Icons.add_a_photo,
-                                size: 40, color: Colors.grey)
-                            : null,
-                      ),
+    return CustomScaffold(
+      title: "สมัครสมาชิก",
+      body: Center(
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey[300],
+                      backgroundImage: _imageBytes != null ? MemoryImage(_imageBytes!) : null,
+                      child: _imageBytes == null
+                          ? const Icon(Icons.add_a_photo, size: 40, color: Colors.grey)
+                          : null,
                     ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'เพิ่มรูปภาพ',
-                      style: TextStyle(fontSize: 18, color: Colors.black54),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildTextField('ชื่อ', controller: fname),
-                    const SizedBox(height: 15),
-                    _buildTextField('นามสกุล', controller: lname),
-                    const SizedBox(height: 15),
-                    _buildTextField('อีเมล',
-                        controller: email,
-                        hintExample: 'example@gmail.com',
-                        keyboardType: TextInputType.emailAddress),
-                    const SizedBox(height: 15),
-                    _buildTextField('รหัสผ่าน',
-                        controller: password,
-                        obscure: true,
-                        keyboardType: TextInputType.visiblePassword),
-                    const SizedBox(height: 15),
-                    _buildTextField('ยืนยันรหัสผ่าน',
-                        controller: confirmPassword,
-                        obscure: true,
-                        keyboardType: TextInputType.visiblePassword),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'เพิ่มรูปภาพ',
+                    style: TextStyle(fontSize: 18, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildTextField('ชื่อ', controller: fname),
+                  const SizedBox(height: 15),
+                  _buildTextField('นามสกุล', controller: lname),
+                  const SizedBox(height: 15),
+                  _buildTextField('อีเมล',
+                      controller: email,
+                      hintExample: 'example@gmail.com',
+                      keyboardType: TextInputType.emailAddress),
+                  const SizedBox(height: 15),
+                  _buildTextField('รหัสผ่าน',
+                      controller: password,
+                      obscure: true,
+                      keyboardType: TextInputType.visiblePassword),
+                  const SizedBox(height: 15),
+                  _buildTextField('ยืนยันรหัสผ่าน',
+                      controller: confirmPassword,
+                      obscure: true,
+                      keyboardType: TextInputType.visiblePassword),
 
-                    const SizedBox(height: 25),
+                  const SizedBox(height: 25),
 
-                    // ปุ่มสมัครสมาชิก
-                    SizedBox(
-                      width: 150,
-                      height: 45,
-                      child: ElevatedButton(
-                        onPressed: registerUser,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          elevation: 5,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
+                  SizedBox(
+                    width: 150,
+                    height: 45,
+                    child: ElevatedButton(
+                      onPressed: registerUser,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        elevation: 5,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
                         ),
-                        child: const Text('สมัครสมาชิก',
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 18)),
                       ),
+                      child: const Text('สมัครสมาชิก',
+                          style: TextStyle(color: Colors.white, fontSize: 18)),
                     ),
-                    const SizedBox(height: 15),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text(
-                        'เข้าสู่ระบบ',
-                        style: TextStyle(color: Colors.black87, fontSize: 18),
-                      ),
+                  ),
+                  const SizedBox(height: 15),
+                  TextButton(
+                    onPressed: () {
+                      // 📌 บังคับให้เปลี่ยน URL กลับหน้า Login เมื่อกดยกเลิก
+                      Navigator.pushReplacementNamed(context, '/login');
+                    },
+                    child: const Text(
+                      'เข้าสู่ระบบ',
+                      style: TextStyle(color: Colors.black87, fontSize: 18),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -284,8 +236,7 @@ class _RegisterPageState extends State<RegisterPage> {
           hintText: hintExample ?? hint,
           filled: true,
           fillColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(25),
             borderSide: BorderSide.none,
@@ -296,8 +247,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: IconButton(
                     icon: Icon(
                       (isPasswordField && _obscurePassword) ||
-                              (isConfirmPasswordField &&
-                                  _obscureConfirmPassword)
+                              (isConfirmPasswordField && _obscureConfirmPassword)
                           ? Icons.visibility_off
                           : Icons.visibility,
                       color: Colors.grey,

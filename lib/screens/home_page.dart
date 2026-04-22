@@ -7,7 +7,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomScaffold(
-      title: "การฝึกดนตรีไทย",
+      title: "practice music",
       body: Center(
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -20,7 +20,7 @@ class HomePage extends StatelessWidget {
             Navigator.pushNamed(context, '/thaimusic');
           },
           child: const Text(
-            "วงปี่พาทย์",
+            "วงจจ",
             style: TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
