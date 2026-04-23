@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data'; // 📌 เพิ่ม import นี้เพื่อรองรับการส่งไฟล์รูปภาพแบบ Bytes
 
 class ApiService {
-  static const String baseUrl = "http://127.0.0.1/ThaiMusic_Admin";
+  static const String baseUrl = "https://thaimusic-admin.com/ThaiMusic_Admin";
 
   // 1. ฟังก์ชันดึงข้อมูล About และ Contact
   static Future<Map<String, dynamic>> getAppSettings() async {

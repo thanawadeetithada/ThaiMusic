@@ -29,9 +29,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     try {
       String getServerUrl() {
         if (Theme.of(context).platform == TargetPlatform.android) {
-          return 'https://127.0.0.1/app_process_forgot_password.php';
+          return 'https://thaimusic-admin.com/app_process_forgot_password.php';
         } else {
-          return 'https://127.0.0.1/app_process_forgot_password.php';
+          return 'https://thaimusic-admin.com/app_process_forgot_password.php';
         }
       }
 

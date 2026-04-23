@@ -85,7 +85,7 @@ class _SongsPageState extends State<SongsPage> {
                                 song['title'], 
                                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
                               ),
-                              subtitle: Text("ความเร็ว: ${song['bpm']} BPM"),
+                              // 📌 ลบ subtitle แสดง BPM ออกไปแล้ว
                               trailing: const Icon(Icons.play_circle_fill, color: Color(0xFF123E6C), size: 38),
                               onTap: () {
                                 // 📌 4. แก้ไขการ Navigation: ใช้ push แทน pushNamed เพื่อให้ทำงานได้ทันที

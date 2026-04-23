@@ -76,7 +76,7 @@ class _FullScreenMenuState extends State<FullScreenMenu> {
   String? _profileImageUrl; // 📌 ตัวแปรเก็บ URL รูปภาพ
   bool _isLoading = true;
 
-  final String baseUrl = "http://127.0.0.1/ThaiMusic_Admin/";
+  final String baseUrl = "https://thaimusic-admin.com/ThaiMusic_Admin/";
 
   @override
   void initState() {

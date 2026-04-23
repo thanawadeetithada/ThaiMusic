@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart'; 
 import '../widgets/custom_layout.dart'; 
-// ไม่ต้อง import ไฟล์หน้าอื่นแบบเก่าแล้ว เพราะเราจะใช้ Route Name แทน
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -34,7 +33,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> loginUser() async {
-    final url = Uri.parse('http://127.0.0.1/ThaiMusic_Admin/app_login.php');
+    final url = Uri.parse('https://thaimusic-admin.com/ThaiMusic_Admin/app_login.php');
     
     try {
       final response = await http.post(

@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -43,8 +44,9 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
   Duration currentPosition = Duration.zero;
   Duration totalDuration = Duration.zero;
 
-  final String baseImageUrl = "http://127.0.0.1/ThaiMusic_Admin/uploads/images/";
-  final String baseAudioUrl = "http://127.0.0.1/ThaiMusic_Admin/uploads/audio/";
+  // URL อาจจะต้องเปลี่ยนตามการใช้งาน (10.0.2.2 หรือ localhost หรือ IP จริง)
+  final String baseImageUrl = "https://thaimusic-admin.com/ThaiMusic_Admin/uploads/images/";
+  final String baseAudioUrl = "https://thaimusic-admin.com/ThaiMusic_Admin/uploads/audio/";
 
   @override
   void initState() {
@@ -97,9 +99,9 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
         debugPrint("Exception in _initData: $e");
     } finally {
        if(mounted){
-          setState(() {
-            isLoading = false;
-          });
+         setState(() {
+           isLoading = false;
+         });
        }
     }
   }
@@ -107,9 +109,6 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
   Future<void> _setupAudioPlayers() async {
     for (int i = 0; i < tracks.length; i++) {
       try {
-        debugPrint("Attempting to load: ${tracks[i].audioUrl}");
-        
-        // 📌 Use setSourceUrl instead of direct play to preload
         await tracks[i].player.setSourceUrl(tracks[i].audioUrl);
         tracks[i].isLoaded = true;
         
@@ -125,9 +124,7 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
           });
         }
       } catch (e) {
-        // 📌 Log the exact URL that failed
         debugPrint("❌ Failed to load audio for track ${tracks[i].name}. URL: ${tracks[i].audioUrl}");
-        debugPrint("Error details: $e");
         tracks[i].isLoaded = false;
       }
     }
@@ -208,10 +205,18 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 📌 เพิ่มโค้ดดักค่าเพื่อป้องกัน Slider Error (ค่า max/value ขัดแย้งกันตอนโหลดหน้า)
+    double sliderMax = totalDuration.inMilliseconds.toDouble();
+    if (sliderMax <= 0) sliderMax = 1.0; // ป้องกัน max เป็น 0
+
+    double sliderValue = currentPosition.inMilliseconds.toDouble();
+    if (sliderValue < 0) sliderValue = 0.0;
+    if (sliderValue > sliderMax) sliderValue = sliderMax; // ป้องกัน value เกิน max
+
     return Scaffold(
-      backgroundColor: const Color(0xFF2E2E2E), 
+      backgroundColor: const Color(0xFF1E1E1E), // ปรับพื้นหลังให้เข้มขึ้นเหมือนโปรแกรมทำเพลง
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: const Color(0xFF2A2A2A),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -240,20 +245,22 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
               ? const Center(child: Text("ไม่พบข้อมูลแทร็ก", style: TextStyle(color: Colors.white)))
               : Column(
               children: [
+                // Timeline Slider
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 100.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 100.0, vertical: 8.0),
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                       activeTrackColor: Colors.white,
                       inactiveTrackColor: Colors.grey[700],
                       thumbColor: Colors.redAccent,
+                      trackHeight: 2,
                     ),
                     child: Slider(
                       min: 0,
-                      max: totalDuration.inMilliseconds.toDouble() > 0 ? totalDuration.inMilliseconds.toDouble() : 1,
-                      value: currentPosition.inMilliseconds.toDouble(),
+                      max: sliderMax,
+                      value: sliderValue,
                       onChanged: (value) {
                         _seekMusic(value);
                       },
@@ -261,27 +268,32 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
                   ),
                 ),
 
+                // Track List
                 Expanded(
                   child: ListView.builder(
                     itemCount: tracks.length,
                     itemBuilder: (context, index) {
                       var track = tracks[index];
-                      double opacity = track.isMuted ? 0.3 : 1.0;
+                      // เงื่อนไข: ถ้าปิดแทร็ก ให้ใช้สีเทาเข้ม ถ้าเปิดให้ใช้สีจาก DB
+                      Color trackBgColor = track.isMuted ? const Color(0xFF4A4A4A) : track.color;
 
                       return Container(
-                        height: 60,
+                        height: 70, // ปรับความสูงแทร็กให้วาดรูปคลื่นได้สวยขึ้น
                         margin: const EdgeInsets.only(bottom: 2),
+                        decoration: BoxDecoration(
+                          border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.5), width: 1)),
+                        ),
                         child: Row(
                           children: [
+                            // 1. ปุ่ม Mute และ Icon (ซ้าย)
                             GestureDetector(
                               onTap: () => _toggleMute(track),
                               child: Container(
                                 width: 90,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF3E3E3E),
+                                  color: const Color(0xFF383838), // สีพื้นหลังไอคอน
                                   border: Border(
-                                    right: BorderSide(color: Colors.grey[800]!, width: 2),
-                                    bottom: BorderSide(color: Colors.grey[800]!, width: 1),
+                                    right: BorderSide(color: Colors.black.withOpacity(0.6), width: 2),
                                   )
                                 ),
                                 child: Stack(
@@ -291,27 +303,28 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         track.iconUrl.isNotEmpty
-                                          ? Image.network(baseImageUrl + track.iconUrl, height: 35, errorBuilder: (c,e,s) => const Icon(Icons.music_note, color: Colors.white))
-                                          : const Icon(Icons.music_note, color: Colors.white),
+                                          ? Image.network(baseImageUrl + track.iconUrl, height: 40, errorBuilder: (c,e,s) => const Icon(Icons.music_note, color: Colors.white70))
+                                          : const Icon(Icons.music_note, color: Colors.white70, size: 30),
                                       ],
                                     ),
+                                    // กากบาทสีแดงเมื่อ Muted
                                     if (track.isMuted)
-                                      const Icon(Icons.close, color: Colors.red, size: 50),
+                                      const Icon(Icons.close, color: Colors.redAccent, size: 60),
                                   ],
                                 ),
                               ),
                             ),
                             
+                            // 2. แทร็กแถบสี และ Waveform (ขวา)
                             Expanded(
-                              child: AnimatedOpacity(
-                                duration: const Duration(milliseconds: 300),
-                                opacity: opacity, 
-                                child: Container(
-                                  color: track.color, 
-                                  child: CustomPaint(
-                                    painter: WaveformPainter(
-                                      progress: currentPosition.inMilliseconds / (totalDuration.inMilliseconds == 0 ? 1 : totalDuration.inMilliseconds),
-                                    ),
+                              child: Container(
+                                color: trackBgColor, // แถบสียาว (เป็นสีเทาถ้า Mute)
+                                child: CustomPaint(
+                                  size: const Size(double.infinity, double.infinity),
+                                  painter: WaveformPainter(
+                                    progress: sliderMax > 1 ? (sliderValue / sliderMax) : 0.0, // 📌 ใช้ค่าที่ดักความปลอดภัยแล้ว
+                                    seed: track.id.hashCode, // ใช้ ID เป็นตัวสร้างความคลื่นให้คงที่
+                                    isMuted: track.isMuted,
                                   ),
                                 ),
                               ),
@@ -328,32 +341,58 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
   }
 }
 
+// วาดรูปคลื่นเสมือนจริง
 class WaveformPainter extends CustomPainter {
   final double progress;
-  WaveformPainter({required this.progress});
+  final int seed;
+  final bool isMuted;
+
+  WaveformPainter({
+    required this.progress, 
+    required this.seed,
+    required this.isMuted,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    Paint linePaint = Paint()
-      ..color = Colors.black.withOpacity(0.15)
-      ..strokeWidth = 2;
+    var random = Random(seed); // ใช้ seed เดิมเสมอ คลื่นจะไม่ดิ้นไปมาตอน setState
     
-    for (double i = 0; i < size.width; i += 10) {
-      double height = (i % 30 == 0) ? size.height * 0.6 : size.height * 0.3;
-      canvas.drawLine(
-        Offset(i, (size.height - height) / 2), 
-        Offset(i, (size.height + height) / 2), 
-        linePaint
-      );
+    // สีของคลื่นส่วนที่ "เล่นผ่านไปแล้ว"
+    Paint playedPaint = Paint()
+      ..color = isMuted ? Colors.grey[400]! : Colors.white.withOpacity(0.85)
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+
+    // สีของคลื่นส่วนที่ "ยังไม่ได้เล่น"
+    Paint unplayedPaint = Paint()
+      ..color = isMuted ? Colors.grey[500]! : Colors.black.withOpacity(0.25)
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+
+    double midY = size.height / 2;
+    double currentX = size.width * progress;
+
+    // วาดเส้นคลื่น (ความถี่)
+    for (double x = 0; x < size.width; x += 5) {
+      // สุ่มความสูงของเส้นคลื่น (10% - 80% ของความสูง Container)
+      double heightPercent = 0.1 + random.nextDouble() * 0.7;
+      double h = size.height * heightPercent;
+
+      // เลือกสีเส้น (ถ้า x น้อยกว่าตำแหน่งปัจจุบัน แสดงว่าเล่นผ่านแล้ว)
+      Paint p = x <= currentX ? playedPaint : unplayedPaint;
+      
+      canvas.drawLine(Offset(x, midY - h / 2), Offset(x, midY + h / 2), p);
     }
 
-    Paint progressPaint = Paint()
-      ..color = Colors.black87
+    // วาดเส้นแนวตั้ง (Playhead) ตำแหน่งที่กำลังเล่น
+    Paint playheadPaint = Paint()
+      ..color = Colors.white
       ..strokeWidth = 1.5;
-    double currentX = size.width * progress;
-    canvas.drawLine(Offset(currentX, 0), Offset(currentX, size.height), progressPaint);
+    canvas.drawLine(Offset(currentX, 0), Offset(currentX, size.height), playheadPaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant WaveformPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.isMuted != isMuted;
+  }
 }

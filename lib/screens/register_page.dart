@@ -66,7 +66,7 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    final url = Uri.parse('http://127.0.0.1/ThaiMusic_Admin/app_register.php');
+    final url = Uri.parse('https://thaimusic-admin.com/ThaiMusic_Admin/app_register.php');
     var request = http.MultipartRequest('POST', url);
 
     request.fields['fname'] = fname.text.trim();
