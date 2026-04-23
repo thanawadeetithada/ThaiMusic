@@ -124,4 +124,52 @@ class ApiService {
       return {"status": "error", "message": "Connection Failed"};
     }
   }
+
+  // 6. ฟังก์ชันดึงรายชื่อวงดนตรี
+  static Future<Map<String, dynamic>> getEnsembles() async {
+    try {
+      final url = Uri.parse("$baseUrl/app_get_ensembles.php");
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return {'status': 'error', 'message': 'Server Error: ${response.statusCode}'};
+      }
+    } catch (e) {
+      return {'status': 'error', 'message': 'Connection Failed: $e'};
+    }
+  }
+
+  // 7. ฟังก์ชันดึงรายชื่อเพลงตามไอดีวงดนตรี
+  static Future<Map<String, dynamic>> getSongs(String ensembleId) async {
+    try {
+      final url = Uri.parse("$baseUrl/app_get_songs.php?ensemble_id=$ensembleId");
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return {'status': 'error', 'message': 'Server Error: ${response.statusCode}'};
+      }
+    } catch (e) {
+      return {'status': 'error', 'message': 'Connection Failed: $e'};
+    }
+  }
+
+  // 8. ฟังก์ชันดึงรายการแทร็กเครื่องดนตรี (📌 เพิ่มใหม่สำหรับหน้า Play Music)
+  static Future<Map<String, dynamic>> getTracks(String songId) async {
+    try {
+      final url = Uri.parse("$baseUrl/app_get_tracks.php?song_id=$songId");
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return {'status': 'error', 'message': 'Server Error: ${response.statusCode}'};
+      }
+    } catch (e) {
+      return {'status': 'error', 'message': 'Connection Failed: $e'};
+    }
+  }
 }
