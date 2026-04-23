@@ -45,8 +45,8 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
   Duration totalDuration = Duration.zero;
 
   // URL อาจจะต้องเปลี่ยนตามการใช้งาน (10.0.2.2 หรือ localhost หรือ IP จริง)
-  final String baseImageUrl = "https://thaimusic-admin.com/ThaiMusic_Admin/uploads/images/";
-  final String baseAudioUrl = "https://thaimusic-admin.com/ThaiMusic_Admin/uploads/audio/";
+  final String baseImageUrl = "https://thaimusic-admin.com/uploads/images/";
+  final String baseAudioUrl = "https://thaimusic-admin.com/uploads/audio/";
 
   @override
   void initState() {

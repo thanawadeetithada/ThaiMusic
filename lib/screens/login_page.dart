@@ -33,7 +33,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> loginUser() async {
-    final url = Uri.parse('https://thaimusic-admin.com/ThaiMusic_Admin/app_login.php');
+    final url = Uri.parse('https://thaimusic-admin.com/app_login.php');
     
     try {
       final response = await http.post(

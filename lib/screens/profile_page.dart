@@ -130,7 +130,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_imageBytes != null) {
       return MemoryImage(_imageBytes!); // รูปใหม่ที่เพิ่งเลือก
     } else if (currentImageUrl != null && currentImageUrl!.isNotEmpty) {
-      return NetworkImage('https://thaimusic-admin.com/ThaiMusic_Admin/$currentImageUrl'); // รูปเดิมจากฐานข้อมูล
+      return NetworkImage('https://thaimusic-admin.com/$currentImageUrl'); // รูปเดิมจากฐานข้อมูล
     }
     return null; // ไม่มีรูปเลย (ให้แสดง Icon)
   }
