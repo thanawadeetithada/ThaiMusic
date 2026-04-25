@@ -1,0 +1,22 @@
+workflows:
+  ios-manual-build:
+    name: Build iOS IPA for Manual Install
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      - name: Install CocoaPods dependencies
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      - name: Build iOS IPA
+        script: |
+          # ใช้ --export-method ad-hoc หรือ development สำหรับติดตั้งแมนนวล
+          flutter build ipa --release --export-method ad-hoc
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
