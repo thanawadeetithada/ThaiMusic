@@ -1,26 +1,32 @@
 name: Build iOS IPA
-on: [push] # ทุกครั้งที่ push โค้ด ระบบจะบิลด์ให้ทันที
+on: [push]
 
 jobs:
   build:
-    runs-on: macos-latest # ยืมใช้เครื่อง Mac ของ GitHub
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
+      - name: Checkout code
+        uses: actions/checkout@v4 # ใช้ v4
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      - run: flutter pub get
-      - run: flutter build ios --release --no-codesign # บิลด์แบบไม่ใช้ใบรับรอง (ฟรี)
-      
-      # คำสั่งแปลงไฟล์ .app ให้เป็น .ipa เพื่อเอาไปลงมือถือ
-      - name: Create IPA
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build iOS
+        run: flutter build ios --release --no-codesign
+
+      - name: Make IPA
         run: |
           mkdir -p Payload
           mv build/ios/iphoneos/Runner.app Payload
-          zip -r my_app.ipa Payload
-          
-      - name: Upload result
-        uses: actions/upload-artifact@v3
+          zip -r ThaiMusic.ipa Payload
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: ios-app
-          path: my_app.ipa
+          name: ThaiMusic-App
+          path: ThaiMusic.ipa
