@@ -89,45 +89,53 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
           ));
         }
 
-        await _setupAudioPlayers();
-        await _loadSavedPosition(); 
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        }
+
+        _setupAudioPlayers();
+        _loadSavedPosition(); 
         
       } else {
         debugPrint("Error loading tracks: ${result['message']}");
+        if (mounted) setState(() => isLoading = false);
       }
     } catch (e) {
         debugPrint("Exception in _initData: $e");
-    } finally {
-       if(mounted){
-         setState(() {
-           isLoading = false;
-         });
-       }
+        if (mounted) setState(() => isLoading = false);
     }
   }
 
   Future<void> _setupAudioPlayers() async {
+    List<Future<void>> setupTasks = [];
+
     for (int i = 0; i < tracks.length; i++) {
-      try {
-        await tracks[i].player.setSourceUrl(tracks[i].audioUrl);
-        tracks[i].isLoaded = true;
-        
-        if (i == 0) {
-          tracks[i].player.onDurationChanged.listen((duration) {
-            setState(() => totalDuration = duration);
-          });
-          tracks[i].player.onPositionChanged.listen((position) {
-            setState(() => currentPosition = position);
-          });
-          tracks[i].player.onPlayerComplete.listen((event) {
-            _stopMusic(); 
-          });
+      setupTasks.add(() async {
+        try {
+          await tracks[i].player.setSourceUrl(tracks[i].audioUrl);
+          tracks[i].isLoaded = true;
+          
+          if (i == 0) {
+            tracks[i].player.onDurationChanged.listen((duration) {
+              if (mounted) setState(() => totalDuration = duration);
+            });
+            tracks[i].player.onPositionChanged.listen((position) {
+              if (mounted) setState(() => currentPosition = position);
+            });
+            tracks[i].player.onPlayerComplete.listen((event) {
+              _stopMusic(); 
+            });
+          }
+        } catch (e) {
+          debugPrint("❌ Failed to load audio for track ${tracks[i].name}. URL: ${tracks[i].audioUrl}");
+          tracks[i].isLoaded = false;
         }
-      } catch (e) {
-        debugPrint("❌ Failed to load audio for track ${tracks[i].name}. URL: ${tracks[i].audioUrl}");
-        tracks[i].isLoaded = false;
-      }
+      }());
     }
+
+    await Future.wait(setupTasks);
   }
 
   Future<void> _loadSavedPosition() async {
