@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:app_links/app_links.dart';
-
-// Import หน้าเก่าของคุณ
 import 'screens/login_page.dart';
 import 'screens/register_page.dart';
 import 'screens/forgot_password_page.dart';
 import 'screens/reset_password_page.dart';
 import 'screens/music_page.dart';
-
-// Import หน้าใหม่
 import 'screens/splash_page.dart';
 import 'screens/home_page.dart';
 import 'screens/profile_page.dart';
@@ -19,7 +15,6 @@ void main() {
   runApp(const MyApp());
 }
 
-// Mock State สำหรับจำลองการ Login (นำไปเปลี่ยนเป็นการเช็ค Token จริงได้ภายหลัง)
 bool isUserLoggedIn = false; 
 
 class MyApp extends StatefulWidget {
@@ -62,20 +57,16 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       title: 'Thai Music App',
       theme: ThemeData(
-        fontFamily: 'Kanit', // แนะนำให้ลงฟอนต์ Kanit หรือ Prompt ใน pubspec.yaml
+        fontFamily: 'Kanit',
         primaryColor: const Color(0xFF123E6C),
       ),
-      // เปลี่ยนหน้าแรกเป็น Splash Screen
       initialRoute: "/splash", 
       routes: {
-        // หน้าใหม่
         '/splash': (context) => const SplashPage(),
         '/main': (context) => const HomePage(),
         '/profile': (context) => const ProfilePage(),
         '/about': (context) => const AboutPage(),
         '/contact': (context) => const ContactPage(),
-        
-        // หน้าเดิม
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/forgot': (context) => const ForgotPasswordPage(),
