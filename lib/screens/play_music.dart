@@ -20,7 +20,7 @@ class TrackItem {
   final Color color;
   bool isMuted;
   final AudioPlayer player;
-  bool isLoaded; // Track if the source loaded successfully
+  bool isLoaded;
 
   TrackItem({
     required this.id,
@@ -44,14 +44,12 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
   Duration currentPosition = Duration.zero;
   Duration totalDuration = Duration.zero;
 
-  // URL อาจจะต้องเปลี่ยนตามการใช้งาน (10.0.2.2 หรือ localhost หรือ IP จริง)
   final String baseImageUrl = "https://thaimusic-admin.com/uploads/images/";
   final String baseAudioUrl = "https://thaimusic-admin.com/uploads/audio/";
 
   @override
   void initState() {
     super.initState();
-    // 1. บังคับหน้าจอเป็นแนวนอน
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeRight,
       DeviceOrientation.landscapeLeft,
@@ -213,16 +211,15 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 📌 เพิ่มโค้ดดักค่าเพื่อป้องกัน Slider Error (ค่า max/value ขัดแย้งกันตอนโหลดหน้า)
     double sliderMax = totalDuration.inMilliseconds.toDouble();
-    if (sliderMax <= 0) sliderMax = 1.0; // ป้องกัน max เป็น 0
+    if (sliderMax <= 0) sliderMax = 1.0; 
 
     double sliderValue = currentPosition.inMilliseconds.toDouble();
     if (sliderValue < 0) sliderValue = 0.0;
-    if (sliderValue > sliderMax) sliderValue = sliderMax; // ป้องกัน value เกิน max
+    if (sliderValue > sliderMax) sliderValue = sliderMax; 
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E1E), // ปรับพื้นหลังให้เข้มขึ้นเหมือนโปรแกรมทำเพลง
+      backgroundColor: const Color(0xFF1E1E1E), 
       appBar: AppBar(
         backgroundColor: const Color(0xFF2A2A2A),
         leading: IconButton(
@@ -247,109 +244,105 @@ class _PlayMusicPageState extends State<PlayMusicPage> {
           const SizedBox(width: 20),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : tracks.isEmpty 
-              ? const Center(child: Text("ไม่พบข้อมูลแทร็ก", style: TextStyle(color: Colors.white)))
-              : Column(
-              children: [
-                // Timeline Slider
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 100.0, vertical: 8.0),
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                      activeTrackColor: Colors.white,
-                      inactiveTrackColor: Colors.grey[700],
-                      thumbColor: Colors.redAccent,
-                      trackHeight: 2,
-                    ),
-                    child: Slider(
-                      min: 0,
-                      max: sliderMax,
-                      value: sliderValue,
-                      onChanged: (value) {
-                        _seekMusic(value);
-                      },
+      body: SafeArea(
+        bottom: false, 
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : tracks.isEmpty 
+                ? const Center(child: Text("ไม่พบข้อมูลแทร็ก", style: TextStyle(color: Colors.white)))
+                : Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 100.0, vertical: 8.0),
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                        activeTrackColor: Colors.white,
+                        inactiveTrackColor: Colors.grey[700],
+                        thumbColor: Colors.redAccent,
+                        trackHeight: 2,
+                      ),
+                      child: Slider(
+                        min: 0,
+                        max: sliderMax,
+                        value: sliderValue,
+                        onChanged: (value) {
+                          _seekMusic(value);
+                        },
+                      ),
                     ),
                   ),
-                ),
 
-                // Track List
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: tracks.length,
-                    itemBuilder: (context, index) {
-                      var track = tracks[index];
-                      // เงื่อนไข: ถ้าปิดแทร็ก ให้ใช้สีเทาเข้ม ถ้าเปิดให้ใช้สีจาก DB
-                      Color trackBgColor = track.isMuted ? const Color(0xFF4A4A4A) : track.color;
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: tracks.length,
+                      itemBuilder: (context, index) {
+                        var track = tracks[index];
+                        Color trackBgColor = track.isMuted ? const Color(0xFF4A4A4A) : track.color;
 
-                      return Container(
-                        height: 70, // ปรับความสูงแทร็กให้วาดรูปคลื่นได้สวยขึ้น
-                        margin: const EdgeInsets.only(bottom: 2),
-                        decoration: BoxDecoration(
-                          border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.5), width: 1)),
-                        ),
-                        child: Row(
-                          children: [
-                            // 1. ปุ่ม Mute และ Icon (ซ้าย)
-                            GestureDetector(
-                              onTap: () => _toggleMute(track),
-                              child: Container(
-                                width: 90,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF383838), // สีพื้นหลังไอคอน
-                                  border: Border(
-                                    right: BorderSide(color: Colors.black.withOpacity(0.6), width: 2),
-                                  )
-                                ),
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        track.iconUrl.isNotEmpty
-                                          ? Image.network(baseImageUrl + track.iconUrl, height: 40, errorBuilder: (c,e,s) => const Icon(Icons.music_note, color: Colors.white70))
-                                          : const Icon(Icons.music_note, color: Colors.white70, size: 30),
-                                      ],
-                                    ),
-                                    // กากบาทสีแดงเมื่อ Muted
-                                    if (track.isMuted)
-                                      const Icon(Icons.close, color: Colors.redAccent, size: 60),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            
-                            // 2. แทร็กแถบสี และ Waveform (ขวา)
-                            Expanded(
-                              child: Container(
-                                color: trackBgColor, // แถบสียาว (เป็นสีเทาถ้า Mute)
-                                child: CustomPaint(
-                                  size: const Size(double.infinity, double.infinity),
-                                  painter: WaveformPainter(
-                                    progress: sliderMax > 1 ? (sliderValue / sliderMax) : 0.0, // 📌 ใช้ค่าที่ดักความปลอดภัยแล้ว
-                                    seed: track.id.hashCode, // ใช้ ID เป็นตัวสร้างความคลื่นให้คงที่
-                                    isMuted: track.isMuted,
+                        return Container(
+                          height: 70, 
+                          margin: const EdgeInsets.only(bottom: 2),
+                          decoration: BoxDecoration(
+                            border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.5), width: 1)),
+                          ),
+                          child: Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () => _toggleMute(track),
+                                child: Container(
+                                  width: 90,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF383838),
+                                    border: Border(
+                                      right: BorderSide(color: Colors.black.withOpacity(0.6), width: 2),
+                                    )
+                                  ),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          track.iconUrl.isNotEmpty
+                                            ? Image.network(baseImageUrl + track.iconUrl, height: 40, errorBuilder: (c,e,s) => const Icon(Icons.music_note, color: Colors.white70))
+                                            : const Icon(Icons.music_note, color: Colors.white70, size: 30),
+                                        ],
+                                      ),
+                                      if (track.isMuted)
+                                        const Icon(Icons.close, color: Colors.redAccent, size: 60),
+                                    ],
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                              
+                              Expanded(
+                                child: Container(
+                                  color: trackBgColor, 
+                                  child: CustomPaint(
+                                    size: const Size(double.infinity, double.infinity),
+                                    painter: WaveformPainter(
+                                      progress: sliderMax > 1 ? (sliderValue / sliderMax) : 0.0, 
+                                      seed: track.id.hashCode, 
+                                      isMuted: track.isMuted,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 }
 
-// วาดรูปคลื่นเสมือนจริง
 class WaveformPainter extends CustomPainter {
   final double progress;
   final int seed;
@@ -363,15 +356,13 @@ class WaveformPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    var random = Random(seed); // ใช้ seed เดิมเสมอ คลื่นจะไม่ดิ้นไปมาตอน setState
+    var random = Random(seed); 
     
-    // สีของคลื่นส่วนที่ "เล่นผ่านไปแล้ว"
     Paint playedPaint = Paint()
       ..color = isMuted ? Colors.grey[400]! : Colors.white.withOpacity(0.85)
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
 
-    // สีของคลื่นส่วนที่ "ยังไม่ได้เล่น"
     Paint unplayedPaint = Paint()
       ..color = isMuted ? Colors.grey[500]! : Colors.black.withOpacity(0.25)
       ..strokeWidth = 2.5
@@ -380,19 +371,15 @@ class WaveformPainter extends CustomPainter {
     double midY = size.height / 2;
     double currentX = size.width * progress;
 
-    // วาดเส้นคลื่น (ความถี่)
     for (double x = 0; x < size.width; x += 5) {
-      // สุ่มความสูงของเส้นคลื่น (10% - 80% ของความสูง Container)
       double heightPercent = 0.1 + random.nextDouble() * 0.7;
       double h = size.height * heightPercent;
 
-      // เลือกสีเส้น (ถ้า x น้อยกว่าตำแหน่งปัจจุบัน แสดงว่าเล่นผ่านแล้ว)
       Paint p = x <= currentX ? playedPaint : unplayedPaint;
       
       canvas.drawLine(Offset(x, midY - h / 2), Offset(x, midY + h / 2), p);
     }
 
-    // วาดเส้นแนวตั้ง (Playhead) ตำแหน่งที่กำลังเล่น
     Paint playheadPaint = Paint()
       ..color = Colors.white
       ..strokeWidth = 1.5;
