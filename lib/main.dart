@@ -75,7 +75,7 @@ class _MyAppState extends State<MyApp> {
         '/about': (context) => const AboutPage(),
         '/contact': (context) => const ContactPage(),
         
-        // หน้าเดิมของคุณ
+        // หน้าเดิม
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/forgot': (context) => const ForgotPasswordPage(),
